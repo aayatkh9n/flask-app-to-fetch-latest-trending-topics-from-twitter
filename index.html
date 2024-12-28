@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="styles.css">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Trends</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #1a1a1a; 
+            color: #ffffff; 
+        }
+        .link-button { 
+            color: #00acee; 
+            text-decoration: none; 
+            cursor: pointer; 
+            border: 1px solid #00acee; 
+            background: none; 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            border-radius: 5px; 
+        }
+        .link-button:hover { 
+            background-color: #00acee; 
+            color: #ffffff; 
+        }
+        #spinner { 
+            display: none; 
+            margin: 20px 0; 
+            font-style: italic; 
+        }
+        #result { 
+            margin-top: 20px; 
+            padding: 20px; 
+            border: 1px solid #444; 
+            border-radius: 10px; 
+            background-color: #2a2a2a;
+        }
+        .trend-list { 
+            list-style-type: decimal; 
+            padding-left: 20px; 
+            margin-top: 10px;
+        }
+        .trend-item { 
+            margin: 5px 0; 
+            font-size: 18px; 
+            line-height: 1.5; 
+        }
+        .error-message {
+            color: #ff4d4d;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Twitter Trends</h1>
+    <button class="link-button" onclick="runScript()">Click here to view the top 5 trending topics</button>
+    <div id="spinner">Loading...</div>
+    <div id="result"></div>
+
+    <script>
+        async function runScript() {
+            const spinner = document.getElementById("spinner");
+            const result = document.getElementById("result");
+            
+            try {
+                spinner.style.display = "block";
+                result.innerHTML = "";
+
+                const response = await fetch("/run-scraper", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                const formattedDate = new Date(data.end_time).toLocaleString();
+                const trends = [
+                    data.trend1, 
+                    data.trend2, 
+                    data.trend3, 
+                    data.trend4, 
+                    data.trend5
+                ];
+
+                const trendList = trends.map((trend, index) => `<li class="trend-item">${index + 1}. ${trend}</li>`).join("");
+
+                result.innerHTML = `
+                    <p>Top 5 Trending Topics as of ${formattedDate}:</p>
+                    <ul class="trend-list">${trendList}</ul>
+                    <p>Query IP Address: ${data.ip_address}</p>
+                    <p>MongoDB Record:</p>
+                    <pre style="background: #333; color: #fff; padding: 10px; border-radius: 5px;">[
+    {
+        "_id": "${data._id}",
+        "trend1": "${data.trend1}",
+        "trend2": "${data.trend2}",
+        "trend3": "${data.trend3}",
+        "trend4": "${data.trend4}",
+        "trend5": "${data.trend5}"
+    }
+]</pre>
+                `;
+            } catch (error) {
+                result.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            } finally {
+                spinner.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
